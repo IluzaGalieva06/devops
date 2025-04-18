@@ -1,0 +1,54 @@
+- name: DevOps Homework
+  hosts: 172.28.125.158
+  become: yes
+  vars:
+    username: newuser
+    ansible_become_pass: iluza
+    public_key: "{{ lookup('file', '/home/iluza/.ssh/id_rsa.pub') }}"
+  tasks:
+    - name: Create user
+      user:
+        name: "{{ username }}"
+        state: present
+        shell: /bin/bash
+
+    - name: Allow user to sudo without password
+      lineinfile:
+        dest: /etc/sudoers
+        state: present
+        line: "{{ username }} ALL=(ALL) NOPASSWD: ALL"
+        validate: 'visudo -cf %s'
+
+    - name: Create .ssh directory
+      file:
+        path: "/home/{{ username }}/.ssh"
+        state: directory
+        mode: 0700
+        owner: "{{ username }}"
+        group: "{{ username }}"
+
+    - name: Add authorized key
+      authorized_key:
+        user: "{{ username }}"
+        state: present
+        key: "{{ public_key }}"
+
+    - name: Disable password authentication for SSH
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^PasswordAuthentication'
+        line: 'PasswordAuthentication no'
+        state: present
+
+    - name: Restart sshd service
+      service:
+        name: sshd
+        state: restarted
+
+    - name: Create directory in /opt
+      file:
+        path: "/opt/{{ username }}"
+        state: directory
+        mode: 0660
+        owner: "{{ username }}"
+        group: "{{ username }}"

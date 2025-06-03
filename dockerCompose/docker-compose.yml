@@ -1,0 +1,42 @@
+services:
+  server:
+    image: nginx:latest
+    container_name: my_nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx_config:/etc/nginx/conf.d
+    networks:
+      custom_network:
+        aliases:
+          - web
+    restart: unless-stopped
+
+  database:
+    image: mysql:8.0
+    container_name: my_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: testdb
+      MYSQL_USER: dbuser
+      MYSQL_PASSWORD: dbpass
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      custom_network:
+        aliases:
+          - new_db
+          - dev_db
+        ipv4_address: 10.10.10.5
+    restart: unless-stopped
+
+
+networks:
+  custom_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.10.10.0/28
+
+volumes:
+  mysql_data:
